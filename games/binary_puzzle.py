@@ -1,11 +1,15 @@
 """Tools for generating binary puzzles."""
 from itertools import tee, islice
+from functools import partial
 from constraint import (
     Problem,
     ExactSumConstraint,
     MaxSumConstraint,
     MinSumConstraint,
-    FunctionConstraint)
+    FunctionConstraint,
+    BacktrackingSolver,
+    RecursiveBacktrackingSolver,
+    MinConflictsSolver)
 
 def _nwise(iterable, n=2):
     iters = tee(iterable, n)
@@ -29,10 +33,13 @@ def _test_uniqueness(*values, dimension=6):
         return False
     return True
 
-def start():
+def solution(dimension, solver=None):
     """Generate binary puzzle solution."""
     problem = Problem()
-    dimension = 6  # hardcode this for now
+    if solver is not None:
+        problem.setSolver(solver)
+    else:
+        problem.setSolver(BacktrackingSolver())
     problem.addVariables(range(dimension**2), [0, 1])
     for i in range(dimension):
         row_positions = range(
@@ -57,11 +64,23 @@ def start():
                 MinSumConstraint(1), triplet)
     # unique rows and columns
     problem.addConstraint(
-        FunctionConstraint(_test_uniqueness), range(dimension**2))
-    result = problem.getSolution()
-    if result is not None:
+        FunctionConstraint(
+            partial(_test_uniqueness, dimension=dimension)),
+        range(dimension**2))
+    if isinstance(solver, RecursiveBacktrackingSolver):
+        return problem.getSolutions()
+    if isinstance(solver, MinConflictsSolver):
+        return (problem.getSolution(),)
+    return problem.getSolutionIter()
+
+def start():
+    """Handle command line interface."""
+    dimension = 18  # hardcode this for now
+    result = solution(dimension)
+    for item in result:
         for i in range(dimension):
             row_positions = range(
                 i * dimension,
                 (i + 1) * dimension)
-            print(" ".join([str(result[position]) for position in row_positions]))
+            print(" ".join([str(item[position]) for position in row_positions]))
+        print()
