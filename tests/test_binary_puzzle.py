@@ -1,7 +1,7 @@
 """Tests for binary puzzle tools."""
 from time import perf_counter
 import pytest
-from games.binary_puzzle import (
+from games.binary_puzzle_tools import (
     solutions, _test_array_validity, _test_columns_validity)
 
 def test_array_validity():
@@ -12,24 +12,24 @@ def test_array_validity():
 
 def test_columns_validity():
     # valid solution
-    assert _test_columns_validity(((0, 1), (1, 0)))
+    assert _test_columns_validity((0, 1, 1, 0))
     assert _test_columns_validity((
-        (1, 0, 0, 1),
-        (0, 1, 1, 0),
-        (0, 1, 0, 1),
-        (1, 0, 1, 0)))
+        1, 0, 0, 1,
+        0, 1, 1, 0,
+        0, 1, 0, 1,
+        1, 0, 1, 0))
     # invalid columns
     assert not _test_columns_validity((
-        (1, 0, 0, 1),
-        (0, 1, 1, 0),
-        (0, 1, 0, 1),
-        (1, 0, 0, 1)))
+        1, 0, 0, 1,
+        0, 1, 1, 0,
+        0, 1, 0, 1,
+        1, 0, 0, 1))
     # duplicate columns
     assert not _test_columns_validity((
-        (1, 0, 0, 1),
-        (0, 1, 1, 0),
-        (0, 1, 1, 0),
-        (1, 0, 0, 1)))
+        1, 0, 0, 1,
+        0, 1, 1, 0,
+        0, 1, 1, 0,
+        1, 0, 0, 1))
 
 def _delta_time(function):
     start = perf_counter()
