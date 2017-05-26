@@ -5,7 +5,7 @@
 // courtesy of https://stackoverflow.com/a/5376604
 #define GET_BIT(p, n) ((((uint8_t *)p)[n/8] >> (n%8)) & 0x01)
 // this only works for setting bits to 1
-#define SET_BIT(p, n, b) ((uint8_t *)p)[n/8] |= b >> (n%8)
+#define SET_BIT(p, n) ((uint8_t *)p)[n/8] |= 0x01 >> (n%8)
 
 // Lookup table for fast calculation of bits set in 8-bit unsigned char.
 // courtesy of https://stackoverflow.com/a/109915
@@ -146,6 +146,10 @@ static void deconstruct_partial_solution_stack(
     partial_solution_stack->top = -1;
     partial_solution_stack->max_size = 0;
 };
+
+//
+// Python exposed objects here
+//
 
 static PyObject *
 binary_puzzle_solutions(PyObject *self, PyObject *args) {
