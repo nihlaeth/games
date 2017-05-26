@@ -63,7 +63,7 @@ static void construct_partial_solution(
     if (dimension % 8 != 0)
         num_ints++;
     uint8_t *solution;
-    solution = (uint8_t *)calloc(sizeof(uint8_t) * num_ints);
+    solution = (uint8_t *)calloc(num_ints, sizeof(uint8_t));
     if(solution == NULL) {
         fprintf(stderr, "out of memory\n");
         // TODO throw error
@@ -73,7 +73,7 @@ static void construct_partial_solution(
     partial_solution->row = 0;
     partial_solution->row_sum = 0;
     partial_solution->column = 0;
-    partial_solution->column_sums = (uint8_t *)calloc(sizeof(uint8_t) * dimension);
+    partial_solution->column_sums = (uint8_t *)calloc(dimension, sizeof(uint8_t));
 };
 
 static void deconstruct_partial_solution(
@@ -128,7 +128,7 @@ static void construct_partial_solution_stack(
         uint8_t dimension) {
     partial_solution_t **contents;
     contents = (partial_solution_t *)calloc(
-            sizeof(partial_solution_t *) * (dimension + 1));
+            dimension + 1, sizeof(partial_solution_t *));
     if(contents == NULL) {
         fprintf(stderr, "out of memory\n");
         // TODO throw error
