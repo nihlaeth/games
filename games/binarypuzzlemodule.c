@@ -5,53 +5,7 @@
 // courtesy of https://stackoverflow.com/a/5376604
 #define GET_BIT(p, n) ((((uint8_t *)p)[n/8] >> (n%8)) & 0x01)
 // this only works for setting bits to 1
-#define SET_BIT(p, n) ((uint8_t *)p)[n/8] |= 0x01 >> (n%8)
-
-// Lookup table for fast calculation of bits set in 8-bit unsigned char.
-// courtesy of https://stackoverflow.com/a/109915
-
-static uint8_t oneBitsInUChar[] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F (<- n)
-//  =====================================================
-    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, // 0n
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, // 1n
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, // 2n
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, // 3n
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, // 4n
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, // 5n
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, // 6n
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, // 7n
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, // 8n
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, // 9n
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, // An
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, // Bn
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, // Cn
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, // Dn
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, // En
-    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8, // Fn
-};
-
-// Function for fast calculation of bits set in 16-bit unsigned short.
-uint8_t oneBitsInUShort (uint16_t x) {
-    return oneBitsInUChar [x >>    8]
-         + oneBitsInUChar [x &  0xff];
-}
-
-// Function for fast calculation of bits set in 32-bit unsigned int.
-uint8_t oneBitsInUInt (uint32_t x) {
-    return oneBitsInUShort (x >>     16)
-         + oneBitsInUShort (x &  0xffff);
-}
-
-// Function for fast calculation of bits set in 64-bit unsigned int.
-uint8_t oneBitsInULong (uint64_t x) {
-    return oneBitsInUInt (x >>     32)
-         + oneBitsInUInt (x &  0xffffffff);
-}
-
-static uint64_t two_to_the_power(uint64_t n) {
-    return 0x01 << n;
-};
+#define SET_BIT(p, n) ((uint8_t *)p)[n/8] |= 0x01 << (n%8)
 
 //
 // structures and their methods
@@ -67,8 +21,8 @@ typedef struct {
 static void construct_partial_solution(
         partial_solution_t *partial_solution,
         uint8_t dimension) {
-    uint8_t num_ints = dimension / 8;
-    if (dimension % 8 != 0)
+    uint8_t num_ints = dimension * dimension / 8;
+    if ((dimension * dimension) % 8 != 0)
         num_ints++;
     uint8_t *solution;
     solution = (uint8_t *)calloc(num_ints, sizeof(uint8_t));
@@ -147,7 +101,7 @@ static void construct_partial_solution_stack(
     };
     partial_solution_stack->contents = contents;
     partial_solution_stack->top = -1;
-    partial_solution_stack->max_size = dimension + 1;
+    partial_solution_stack->max_size = dimension * dimension + 1;
     partial_solution_stack->dimension = dimension;
 };
 
@@ -196,10 +150,10 @@ static uint8_t * consume_partial_solution_stack(
     };
     // check row and column triplet sums
     count = partial_solution->row_sum;
-    if (count > dimension / 2 || partial_solution->column - count > dimension / 2)
+    if (count > dimension / 2 || partial_solution->column + 1 - count > dimension / 2)
         return cleanup_partial_solution(partial_solution);
     count = partial_solution->column_sums[partial_solution->column];
-    if (count > dimension / 2 || partial_solution->row - count > dimension / 2)
+    if (count > dimension / 2 || partial_solution->row + 1 - count > dimension / 2)
         return cleanup_partial_solution(partial_solution);
     // check for uniqueness if we've just finished a row or column
     if (partial_solution->column == dimension - 1) {
@@ -209,7 +163,7 @@ static uint8_t * consume_partial_solution_stack(
         // TODO
     };
     // check if we are at the end, if so return solution and clean up
-    if (partial_solution->index == two_to_the_power(dimension) - 1) {
+    if (partial_solution->index == dimension * dimension - 1) {
         uint8_t *solution;
         solution = calloc(1, sizeof(partial_solution->solution));
         if(solution == NULL) {
@@ -230,6 +184,7 @@ static uint8_t * consume_partial_solution_stack(
     else {
         partial_solution->column = 0;
         partial_solution->row++;
+        partial_solution->row_sum = 0;
     };
     // push partial solution back onto the stack
     partial_solution_stack_push(partial_solution_stack, partial_solution);
@@ -314,8 +269,6 @@ binary_puzzle_solutions_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
     solutions_state_t *solutions_state = (solutions_state_t *)type->tp_alloc(type, 0);
     if (!solutions_state)
         return NULL;
-    // is this even possible for non- Python objects?
-    //Py_INCREF(partial_solution_stack);
     solutions_state->partial_solution_stack = partial_solution_stack;
 
     return (PyObject *)solutions_state;
@@ -341,17 +294,17 @@ static PyObject * binary_puzzle_solutions_next(solutions_state_t *solutions_stat
     if (solution != NULL) {
         // convert solution to Python friendly format and return it
         uint64_t i;
-        uint8_t *result = calloc(two_to_the_power(solutions_state->partial_solution_stack->dimension) + 1, sizeof(uint8_t));
+        uint8_t *result = calloc(solutions_state->partial_solution_stack->dimension * solutions_state->partial_solution_stack->dimension + 1, sizeof(uint8_t));
         if(result == NULL) {
             return PyErr_NoMemory();
         };
-        for(i = 0; i < two_to_the_power(solutions_state->partial_solution_stack->dimension); i++){
+        for(i = 0; i < solutions_state->partial_solution_stack->dimension * solutions_state->partial_solution_stack->dimension; i++){
             if (GET_BIT(solution, i))
                 result[i] = 0x31; // 1
             else
                 result[i] = 0x30; // 0
         };
-        result[two_to_the_power(solutions_state->partial_solution_stack->dimension)] = 0;
+        result[solutions_state->partial_solution_stack->dimension * solutions_state->partial_solution_stack->dimension] = 0;
         free(solution);
         PyObject * python_string = Py_BuildValue("s", result);
         free(result);
