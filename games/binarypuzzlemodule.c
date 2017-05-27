@@ -1,5 +1,6 @@
 #include <Python.h>
 #include <stdbool.h>
+#include <math.h>
 
 // Macro for reading individual bits
 // courtesy of https://stackoverflow.com/a/5376604
@@ -69,7 +70,7 @@ static void construct_partial_solution(
     uint8_t *solution;
     solution = (uint8_t *)calloc(num_ints, sizeof(uint8_t));
     if(solution == NULL) {
-        PyErr_NoMemory()
+        PyErr_NoMemory();
     };
     partial_solution->solution = solution;
     partial_solution->index = 0;
@@ -133,7 +134,7 @@ static void construct_partial_solution_stack(
     contents = (partial_solution_t **)calloc(
             dimension + 1, sizeof(partial_solution_t *));
     if(contents == NULL) {
-        PyErr_NoMemory()
+        PyErr_NoMemory();
     };
     partial_solution_stack->contents = contents;
     partial_solution_stack->top = -1;
@@ -198,7 +199,7 @@ static uint8_t * consume_partial_solution_stack(
         // TODO
     };
     // check if we are at the end, if so return solution and clean up
-    if (partial_solution->index == 2^dimension - 1) {
+    if (partial_solution->index == pow(2, dimension) - 1) {
         uint8_t *solution;
         solution = calloc(1, sizeof(partial_solution->solution));
         memcpy(
