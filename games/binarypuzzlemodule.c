@@ -69,8 +69,7 @@ static void construct_partial_solution(
     uint8_t *solution;
     solution = (uint8_t *)calloc(num_ints, sizeof(uint8_t));
     if(solution == NULL) {
-        fprintf(stderr, "out of memory\n");
-        // TODO throw error
+        PyErr_NoMemory()
     };
     partial_solution->solution = solution;
     partial_solution->index = 0;
@@ -134,8 +133,7 @@ static void construct_partial_solution_stack(
     contents = (partial_solution_t **)calloc(
             dimension + 1, sizeof(partial_solution_t *));
     if(contents == NULL) {
-        fprintf(stderr, "out of memory\n");
-        // TODO throw error
+        PyErr_NoMemory()
     };
     partial_solution_stack->contents = contents;
     partial_solution_stack->top = -1;
@@ -224,18 +222,22 @@ static uint8_t * consume_partial_solution_stack(
     partial_solution_t *second_partial_solution;
     second_partial_solution = calloc(1, sizeof(partial_solution_t));
     construct_partial_solution(second_partial_solution, dimension);
+    if (PyErr_Occurred() != NULL)
+        return NULL;
     memcpy(
             second_partial_solution->solution,
             partial_solution->solution,
             sizeof(*partial_solution->solution));
     second_partial_solution->index = partial_solution->index;
+    SET_BIT(second_partial_solution->solution, second_partial_solution->index);
     second_partial_solution->row = partial_solution->row;
-    second_partial_solution->row_sum = partial_solution->row_sum;
+    second_partial_solution->row_sum = partial_solution->row_sum + 1;
     second_partial_solution->column = partial_solution->column;
     memcpy(
             second_partial_solution->column_sums,
             partial_solution->column_sums,
             sizeof(*partial_solution->column_sums));
+    second_partial_solution->column_sums[second_partial_solution->column]++;
     // push second solution onto the stack
     partial_solution_stack_push(partial_solution_stack, second_partial_solution);
     return NULL;
