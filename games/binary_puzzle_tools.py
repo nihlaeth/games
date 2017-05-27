@@ -1,5 +1,6 @@
 """Tools for generating binary puzzles."""
 from itertools import tee, islice, permutations, product
+from binary_puzzle import solutions
 
 def _nwise(iterable, n=2):
     iters = tee(iterable, n)
@@ -35,7 +36,7 @@ def _get_possible_rows(dimension):
     possible_rows = set(permutations(row_content, dimension))
     return tuple(row for row in possible_rows if _test_array_validity(row))
 
-def solutions(dimension):
+def _solutions(dimension):
     """Generate binary puzzle solutions."""
     assert dimension % 2 == 0
 
@@ -47,12 +48,12 @@ def solutions(dimension):
 
 def start():
     """Handle command line interface."""
-    dimension = 6  # hardcode this for now
+    dimension = 2  # hardcode this for now
     result = solutions(dimension)
     for item in result:
-        for row in item:
-            print(" ".join([str(cell) for cell in row]))
-        print()
+        # for row in item:
+        #     print(" ".join([str(cell) for cell in row]))
+        print(item)
 
 if __name__ == "__main__":
     import cProfile

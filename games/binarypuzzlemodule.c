@@ -1,6 +1,5 @@
 #include <Python.h>
 #include <stdbool.h>
-#include <math.h>
 
 // Macro for reading individual bits
 // courtesy of https://stackoverflow.com/a/5376604
@@ -49,6 +48,10 @@ uint8_t oneBitsInULong (uint64_t x) {
     return oneBitsInUInt (x >>     32)
          + oneBitsInUInt (x &  0xffffffff);
 }
+
+static uint64_t two_to_the_power(uint64_t n) {
+    return 0x01 << n;
+};
 
 //
 // structures and their methods
@@ -206,7 +209,7 @@ static uint8_t * consume_partial_solution_stack(
         // TODO
     };
     // check if we are at the end, if so return solution and clean up
-    if (partial_solution->index == pow(2, dimension) - 1) {
+    if (partial_solution->index == two_to_the_power(dimension) - 1) {
         uint8_t *solution;
         solution = calloc(1, sizeof(partial_solution->solution));
         if(solution == NULL) {
@@ -337,7 +340,22 @@ static PyObject * binary_puzzle_solutions_next(solutions_state_t *solutions_stat
     };
     if (solution != NULL) {
         // convert solution to Python friendly format and return it
+        uint64_t i;
+        uint8_t *result = calloc(two_to_the_power(solutions_state->partial_solution_stack->dimension) + 1, sizeof(uint8_t));
+        if(result == NULL) {
+            return PyErr_NoMemory();
+        };
+        for(i = 0; i < two_to_the_power(solutions_state->partial_solution_stack->dimension); i++){
+            if (GET_BIT(solution, i))
+                result[i] = 0x31; // 1
+            else
+                result[i] = 0x30; // 0
+        };
+        result[two_to_the_power(solutions_state->partial_solution_stack->dimension)] = 0;
         free(solution);
+        PyObject * python_string = Py_BuildValue("s", result);
+        free(result);
+        return python_string;
     };
     return NULL;
 };
