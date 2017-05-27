@@ -49,6 +49,10 @@ uint8_t oneBitsInULong (uint64_t x) {
          + oneBitsInUInt (x &  0xffffffff);
 }
 
+//
+// structures and their methods
+//
+
 typedef struct {
     uint8_t *solution;
     uint64_t index;
@@ -127,7 +131,7 @@ static void construct_partial_solution_stack(
         partial_solution_stack_t *partial_solution_stack,
         uint8_t dimension) {
     partial_solution_t **contents;
-    contents = (partial_solution_t *)calloc(
+    contents = (partial_solution_t **)calloc(
             dimension + 1, sizeof(partial_solution_t *));
     if(contents == NULL) {
         fprintf(stderr, "out of memory\n");
@@ -145,6 +149,96 @@ static void deconstruct_partial_solution_stack(
     free(partial_solution_stack->contents);
     partial_solution_stack->top = -1;
     partial_solution_stack->max_size = 0;
+};
+
+//
+// where the magic happens
+//
+
+static void * cleanup_partial_solution(partial_solution_t *partial_solution) {
+    deconstruct_partial_solution(partial_solution);
+    free(partial_solution);
+    return NULL;
+};
+
+static uint8_t * consume_partial_solution_stack(
+        partial_solution_stack_t *partial_solution_stack,
+        uint8_t dimension) {
+    if (partial_solution_stack_is_empty(partial_solution_stack))
+        return NULL;
+    partial_solution_t *partial_solution = partial_solution_stack_pop(partial_solution_stack);
+    uint8_t count;
+    // check triplet sum
+    if (partial_solution->column > 1) {
+        count =
+            GET_BIT(partial_solution->solution, partial_solution->index) +
+            GET_BIT(partial_solution->solution, partial_solution->index - 1) +
+            GET_BIT(partial_solution->solution, partial_solution->index - 2);
+        if (count < 1 || count > 2)
+            return cleanup_partial_solution(partial_solution);
+    };
+    if (partial_solution->row > 1) {
+        count =
+            GET_BIT(partial_solution->solution, partial_solution->index) +
+            GET_BIT(partial_solution->solution, partial_solution->index - dimension) +
+            GET_BIT(partial_solution->solution, partial_solution->index - 2 * dimension);
+        if (count < 1 || count > 2)
+            return cleanup_partial_solution(partial_solution);
+    };
+    // check row and column triplet sums
+    count = partial_solution->row_sum;
+    if (count > dimension / 2 || partial_solution->column - count > dimension / 2)
+        return cleanup_partial_solution(partial_solution);
+    count = partial_solution->column_sums[partial_solution->column];
+    if (count > dimension / 2 || partial_solution->row - count > dimension / 2)
+        return cleanup_partial_solution(partial_solution);
+    // check for uniqueness if we've just finished a row or column
+    if (partial_solution->column == dimension - 1) {
+        // TODO
+    };
+    if (partial_solution->row == dimension - 1) {
+        // TODO
+    };
+    // check if we are at the end, if so return solution and clean up
+    if (partial_solution->index == 2^dimension - 1) {
+        uint8_t *solution;
+        solution = calloc(1, sizeof(partial_solution->solution));
+        memcpy(
+                solution,
+                partial_solution->solution,
+                sizeof(*partial_solution->solution));
+        cleanup_partial_solution(partial_solution);
+        return solution;
+    };
+    // increment place counters
+    partial_solution->index++;
+    if (partial_solution->column < dimension - 1)
+        partial_solution->column++;
+    else {
+        partial_solution->column = 0;
+        partial_solution->row++;
+    };
+    // push partial solution back onto the stack
+    partial_solution_stack_push(partial_solution_stack, partial_solution);
+    // construct another partial solution with a one bit set at new position
+    partial_solution_t *second_partial_solution;
+    second_partial_solution = calloc(1, sizeof(partial_solution_t));
+    construct_partial_solution(second_partial_solution, dimension);
+    memcpy(
+            second_partial_solution->solution,
+            partial_solution->solution,
+            sizeof(*partial_solution->solution));
+    second_partial_solution->index = partial_solution->index;
+    second_partial_solution->row = partial_solution->row;
+    second_partial_solution->row_sum = partial_solution->row_sum;
+    second_partial_solution->column = partial_solution->column;
+    memcpy(
+            second_partial_solution->column_sums,
+            partial_solution->column_sums,
+            sizeof(*partial_solution->column_sums));
+    // push second solution onto the stack
+    partial_solution_stack_push(partial_solution_stack, second_partial_solution);
+    return NULL;
 };
 
 //
